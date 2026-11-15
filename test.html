@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>2FA Test</title>
+</head>
+<body>
+
+<h2>🔐 تجربة Authenticator</h2>
+
+<button onclick="setup()">1️⃣ توليد QR</button>
+
+<br><br>
+
+<img id="qr" width="200">
+
+<br><br>
+
+<input type="text" id="code" placeholder="ادخل الكود من الموبايل">
+<button onclick="verify()">2️⃣ تحقق</button>
+
+<p id="result">---</p>
+
+<script src="https://cdn.jsdelivr.net/npm/jsotp@1.3.0/dist/jsOTP.min.js"></script>
+
+<script>
+let secret = "";
+
+function generateSecret(length = 16) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
+
+function setup() {
+  secret = generateSecret();
+
+  const otpauth = `otpauth://totp/MyApp:user@test.com?secret=${secret}&issuer=MyApp`;
+
+  document.getElementById("qr").src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
+    encodeURIComponent(otpauth);
+
+  document.getElementById("result").innerText = "✔ تم توليد QR";
+}
+
+// 🔥 دالة التحقق مع Debug
+function verify() {
+  try {
+    const code = document.getElementById("code").value;
+
+    if (!code) {
+      document.getElementById("result").innerText = "⚠ ادخل الكود أولاً";
+      return;
+    }
+
+    const totp = new jsOTP.totp();
+
+    const current = totp.getOtp(secret);
+    const previous = totp.getOtp(secret, Date.now() - 30000);
+    const next = totp.getOtp(secret, Date.now() + 30000);
+
+    console.log("Secret:", secret);
+    console.log("User Code:", code);
+    console.log("Current:", current);
+    console.log("Previous:", previous);
+    console.log("Next:", next);
+
+    if (code === current || code === previous || code === next) {
+      document.getElementById("result").innerText = "✅ الكود صحيح";
+    } else {
+      document.getElementById("result").innerText = "❌ الكود خطأ";
+    }
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("result").innerText = "🔥 خطأ بالنظام";
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/gh/jiangts/JS-OTP/dist/jsOTP.min.js"></script>
+
+</body>
+</html>
